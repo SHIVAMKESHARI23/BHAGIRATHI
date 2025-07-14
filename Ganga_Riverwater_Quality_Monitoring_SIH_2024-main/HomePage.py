@@ -346,6 +346,7 @@ with tab2:
 with tab3:
     st.subheader(f"🛰️ Satellite Observations near {selected_location}")
 
+    # Supported satellite parameter layers from Bhuvan
     bhuvan_layers = {
         "Turbidity (NTU)": "Ganga_Turbidity",
         "Water Temperature (°C)": "Ganga_Water_Temp",
@@ -356,30 +357,31 @@ with tab3:
     selected_sat_param = st.selectbox("Select Parameter", list(bhuvan_layers.keys()))
     selected_layer = bhuvan_layers[selected_sat_param]
 
+    # 📡 Source info
     st.markdown(f"""
     **📡 Source**: [Bhuvan Ganga Portal](https://bhuvan-app1.nrsc.gov.in/mowr_ganga/)  
-    **🌐 Layer**: `{selected_layer}`  
-    **📍 Location**: `{selected_location}`  
+    **🌐 Layer**: `Bhuvan:{selected_layer}`  
+    **📍 Location**: `{selected_location}`
     """)
 
-    # Optional chart (simulated)
+    # Optional simulated satellite trend chart
     df_sat = load_sample_satellite_data(selected_layer.lower(), days_history)
-    fig = px.line(df_sat, x='date', y='value', title=f"{selected_sat_param} - Simulated Trend")
+    fig = px.line(df_sat, x='date', y='value', title=f"{selected_sat_param} (Simulated Trend)")
     st.plotly_chart(fig, use_container_width=True)
 
+    # 🌍 Satellite WMS Map
     st.subheader("🌍 Real Satellite Imagery (Bhuvan WMS)")
-    m = folium.Map(location=[lat, lon], zoom_start=10, tiles="OpenStreetMap")
+    m = folium.Map(location=[lat, lon], zoom_start=12, tiles="OpenStreetMap")
 
-    # ✅ Add real Bhuvan WMS Layer
     folium.raster_layers.WmsTileLayer(
         url="https://bhuvan-app1.nrsc.gov.in/bhuvan/wms",
-        name=selected_layer,
+        name="Bhuvan Layer",
         layers=f"Bhuvan:{selected_layer}",
-        fmt="image/png",
+        styles="",  # ✅ Must be empty string
+        fmt="image/png",  # ✅ Must use 'fmt' not 'format'
         transparent=True,
-        attribution="Bhuvan NRSC",
         version="1.1.1",
-        styles="",          # <== this was likely missing before!
+        attribution="Bhuvan NRSC",
         overlay=True,
         control=True
     ).add_to(m)
@@ -391,7 +393,7 @@ with tab3:
             [(locations[loc]['lat'], locations[loc]['lon']) for loc in path],
             color="blue",
             weight=4,
-            popup="Ganga River Path"
+            popup="Ganga River Flow"
         ).add_to(m)
 
     folium.CircleMarker(
@@ -399,11 +401,17 @@ with tab3:
         radius=8,
         color="red",
         fill=True,
+        fill_opacity=0.7,
         popup=f"{selected_location} Monitoring Station"
     ).add_to(m)
 
     folium.LayerControl().add_to(m)
     folium_static(m, width=1000, height=600)
+
+    # 🖼️ Add WMS Legend
+    legend_url = f"https://bhuvan-app1.nrsc.gov.in/bhuvan/wms?REQUEST=GetLegendGraphic&VERSION=1.1.0&FORMAT=image/png&LAYER=Bhuvan:{selected_layer}"
+    st.image(legend_url, caption=f"{selected_sat_param} - Legend", use_column_width=False)
+
 
 
 # ========== TAB 4: Industrial Sewage ==========
