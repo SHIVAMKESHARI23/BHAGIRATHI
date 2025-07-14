@@ -13,3 +13,4 @@ beautifulsoup4
 requests
 plotly
 lxml
+html5lib
