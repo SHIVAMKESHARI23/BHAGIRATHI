@@ -345,72 +345,104 @@ with tab2:
 # ========== TAB 3: Satellite Data ==========
 with tab3:
     st.subheader(f"🛰️ Satellite Observations near {selected_location}")
-
-    # Supported satellite parameter layers from Bhuvan
-    bhuvan_layers = {
-        "Turbidity (NTU)": "Ganga_Turbidity",
-        "Water Temperature (°C)": "Ganga_Water_Temp",
-        "Chlorophyll (μg/L)": "Ganga_Chlorophyll",
-        "Suspended Solids (mg/L)": "Ganga_Suspended_Sediment"
+    
+    sat_parameters = {
+        "Turbidity (NTU)": "turbidity",
+        "Water Temperature (°C)": "water_temp",
+        "Chlorophyll (μg/L)": "chlorophyll",
+        "Suspended Solids (mg/L)": "tss"
     }
-
-    selected_sat_param = st.selectbox("Select Parameter", list(bhuvan_layers.keys()))
-    selected_layer = bhuvan_layers[selected_sat_param]
-
-    # 📡 Source info
-    st.markdown(f"""
-    **📡 Source**: [Bhuvan Ganga Portal](https://bhuvan-app1.nrsc.gov.in/mowr_ganga/)  
-    **🌐 Layer**: `Bhuvan:{selected_layer}`  
-    **📍 Location**: `{selected_location}`
-    """)
-
-    # Optional simulated satellite trend chart
-    df_sat = load_sample_satellite_data(selected_layer.lower(), days_history)
-    fig = px.line(df_sat, x='date', y='value', title=f"{selected_sat_param} (Simulated Trend)")
+    selected_sat_param = st.selectbox("Select Parameter", list(sat_parameters.keys()))
+    
+    sat_df = load_sample_satellite_data(sat_parameters[selected_sat_param], days_history)
+    fig = px.line(sat_df, x='date', y='value', title=f"{selected_sat_param} Trends")
     st.plotly_chart(fig, use_container_width=True)
-
-    # 🌍 Satellite WMS Map
-    st.subheader("🌍 Real Satellite Imagery (Bhuvan WMS)")
-    m = folium.Map(location=[lat, lon], zoom_start=12, tiles="OpenStreetMap")
-
+    
+    # Enhanced Satellite Map
+    st.subheader("🌍 Ganga River Satellite Imagery")
+    m = folium.Map(location=[lat, lon], zoom_start=13, tiles=None)
+    
+    # Esri high-res satellite layer
+    folium.TileLayer(
+        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        attr="Esri, Maxar, Earthstar Geographics",
+        name="Satellite View"
+    ).add_to(m)
+    
+    # Bhuvan WMS water quality layer
     folium.raster_layers.WmsTileLayer(
-        url="https://bhuvan-app1.nrsc.gov.in/bhuvan/wms",
-        name="Bhuvan Layer",
-        layers=f"Bhuvan:{selected_layer}",
-        styles="",  # ✅ Must be empty string
-        fmt="image/png",  # ✅ Must use 'fmt' not 'format'
+        url="https://bhuvan-vec1.nrsc.gov.in/bhuvan/wms",
+        name="Bhuvan Water Quality (WMS)",
+        layers="nmcg:waterquality",
+        fmt="image/png",
         transparent=True,
         version="1.1.1",
-        attribution="Bhuvan NRSC",
+        attr="Bhuvan NRSC / ISRO",
         overlay=True,
         control=True
     ).add_to(m)
 
-    # Add river path and marker
+    # Ganga river path overlay
     path = river_network.get_downstream_path(selected_location)
     if path:
         folium.PolyLine(
             [(locations[loc]['lat'], locations[loc]['lon']) for loc in path],
             color="blue",
             weight=4,
-            popup="Ganga River Flow"
+            popup="Ganga River"
         ).add_to(m)
 
+    # Current monitoring location marker
     folium.CircleMarker(
         location=[lat, lon],
-        radius=8,
+        radius=10,
         color="red",
         fill=True,
-        fill_opacity=0.7,
-        popup=f"{selected_location} Monitoring Station"
+        popup=f"<b>{selected_location}</b><br>Monitoring Station"
     ).add_to(m)
 
     folium.LayerControl().add_to(m)
     folium_static(m, width=1000, height=600)
 
-    # 🖼️ Add WMS Legend
-    legend_url = f"https://bhuvan-app1.nrsc.gov.in/bhuvan/wms?REQUEST=GetLegendGraphic&VERSION=1.1.0&FORMAT=image/png&LAYER=Bhuvan:{selected_layer}"
-    st.image(legend_url, caption=f"{selected_sat_param} - Legend", use_column_width=False)
+    # Real-time tabular info from Bhuvan
+    st.subheader("📊 Real Satellite-Derived Water Quality Data (Bhuvan)")
+
+    layer_for_data = st.selectbox("🌐 Select Bhuvan Layer to Query", [
+        "nmcg:waterquality", "nmcg:pollutionsource",
+        "nmcg:treatmentplants", "nmcg:monitoringlocations"
+    ])
+
+    if st.button("🔍 Fetch Real Satellite Data (Bhuvan)"):
+        try:
+            bbox = [
+                lon - 0.01, lat - 0.01,
+                lon + 0.01, lat + 0.01
+            ]
+            bbox_str = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
+            wms_url = "https://bhuvan-vec1.nrsc.gov.in/bhuvan/wms"
+            query_url = (
+                f"{wms_url}?service=WMS&version=1.1.1&request=GetFeatureInfo"
+                f"&layers={layer_for_data}&bbox={bbox_str}"
+                f"&width=512&height=512&srs=EPSG:4326&styles=&feature_count=10"
+                f"&query_layers={layer_for_data}&info_format=text/html&x=256&y=256"
+            )
+
+            res = requests.get(query_url)
+            if res.status_code == 200:
+                soup = BeautifulSoup(res.text, "html.parser")
+                tables = pd.read_html(str(soup))
+                if tables:
+                    df_sat = tables[0]
+                    st.success(f"✅ Retrieved {len(df_sat)} records from {layer_for_data}")
+                    st.dataframe(df_sat, use_container_width=True)
+                    st.download_button("📥 Download CSV", df_sat.to_csv(index=False).encode("utf-8"), f"{layer_for_data}_data.csv")
+                else:
+                    st.warning("⚠️ No tabular data found.")
+            else:
+                st.error(f"❌ Failed to fetch data. HTTP {res.status_code}")
+        except Exception as e:
+            st.error("❌ Error fetching or parsing Bhuvan data.")
+            st.exception(e)
 
 
 
