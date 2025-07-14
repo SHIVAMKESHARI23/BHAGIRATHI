@@ -77,7 +77,7 @@ lat = locations[selected_location]['lat']
 lon = locations[selected_location]['lon']
 station_code = locations[selected_location]['station_code']
 
-# ----------------------- WEATHER API -----------------------
+#weather section
 def fetch_open_meteo(lat, lon, days):
     end_date = datetime.utcnow().date()
     start_date = end_date - timedelta(days=days)
@@ -106,12 +106,12 @@ def fetch_open_meteo(lat, lon, days):
         st.error(f"Weather API error: {e}")
         return None
 
-# ----------------------- ENHANCED WATER QUALITY DATA -----------------------
+# WATER QUALITY DATA 
 def load_sample_water_quality(parameter, days):
     """More realistic water quality patterns for Ganga"""
     dates = pd.date_range(end=datetime.today(), periods=days).strftime("%Y-%m-%d")
     
-    # Base values for different locations
+    
     base_values = {
         "Gangotri": {"DO": 8.5, "BOD": 1.0, "PH": 7.2, "NO3": 0.5},
         "Haridwar": {"DO": 6.8, "BOD": 2.5, "PH": 7.5, "NO3": 0.8},
@@ -120,7 +120,7 @@ def load_sample_water_quality(parameter, days):
         "Kolkata": {"DO": 4.8, "BOD": 6.2, "PH": 8.0, "NO3": 1.5}
     }
     
-    # Get base value for selected location or average
+    
     base = base_values.get(selected_location, {}).get(parameter, 
         5.0 if parameter == "DO" else 
         3.0 if parameter == "BOD" else 
@@ -132,7 +132,7 @@ def load_sample_water_quality(parameter, days):
     unit = "mg/L" if parameter in ["DO", "BOD", "NO3"] else ""
     return pd.DataFrame({"date": dates, "value": values, "unit": unit, "parameter": parameter})
 
-# ----------------------- ENHANCED SATELLITE DATA -----------------------
+#  SATELLITE DATA SECTION
 def load_sample_satellite_data(parameter, days):
     dates = pd.date_range(end=datetime.today(), periods=days).strftime("%Y-%m-%d")
     
@@ -146,13 +146,13 @@ def load_sample_satellite_data(parameter, days):
     
     return pd.DataFrame({"date": dates, "value": values, "parameter": parameter})
 
-# ----------------------- INDUSTRIAL DATA WITH PRIORITY QUEUE -----------------------
+# -INDUSTRIAL DATA WITH PRIORITY QUEUE --
 class IndustrialMonitor:
     def __init__(self):
         self.priority_queue = []
         
     def add_industry(self, name, bod, cod, flow):
-        severity = (bod - 50) + (cod - 200)/5  # Simple severity metric
+        severity = (bod - 50) + (cod - 200)/5  
         heapq.heappush(self.priority_queue, (-severity, name, bod, cod, flow))
     
     def get_most_critical(self, n=5):
@@ -177,7 +177,7 @@ def load_industrial_discharge(station_code):
     }
     return pd.DataFrame(data)
 
-# ----------------------- ENHANCED ALERT SYSTEM -----------------------
+# ENHANCED ALERT SYSTEM
 def get_alerts(df):
     alerts = []
     for _, row in df.iterrows():
@@ -192,10 +192,10 @@ def get_alerts(df):
     alerts.sort(reverse=True)
     return [alert[1] for alert in alerts]
 
-# ----------------------- TABS -----------------------
+#  TABS section
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["💧 Water Quality", "🌦️ Weather Data", "🛰️ Satellite Data", "🏭 Industrial Sewage", "🗺️ River Map", "📈 Forecast", "ℹ️ Project Info"])
 
-# ========== TAB 1: Water Quality ==========
+# =TAB 1: Water Quality ==
 with tab1:
     st.subheader(f"💧 Water Quality at {selected_location}")
     
@@ -211,7 +211,7 @@ with tab1:
     hist_data = load_sample_water_quality(wq_parameters[selected_param], days_history)
     forecast_data = load_sample_water_quality(wq_parameters[selected_param], forecast_days)
     
-    # Combine data
+    # Combine data section part-1+2
     combined_dates = list(hist_data['date']) + [
         (datetime.strptime(hist_data['date'].iloc[-1], "%Y-%m-%d") + 
         timedelta(days=i+1)).strftime("%Y-%m-%d") 
@@ -220,7 +220,7 @@ with tab1:
     combined_values = list(hist_data['value']) + list(forecast_data['value'])
     combined_type = ["historical"]*days_history + ["forecast"]*forecast_days
     
-    # Plot
+    # Ploting i and ii - more on sanatan0511/Bhagirati// unser this github readme section
     fig = px.line(
         x=combined_dates, 
         y=combined_values,
@@ -230,7 +230,7 @@ with tab1:
     )
     fig.update_layout(showlegend=True)
     
-    # Add threshold lines
+    # threshold line
     if selected_param == "DO":
         fig.add_hline(y=4, line_dash="dash", line_color="red", annotation_text="Critical Level")
     elif selected_param == "BOD":
@@ -269,7 +269,8 @@ with tab2:
 
     # --- Visual Crossing API Integration ---
     def fetch_visualcrossing_weather(lat, lon):
-        api_key = "YOUR_API_KEY"  # 🔐 Replace with your free key from: https://www.visualcrossing.com/weather-api
+        api_key = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/india?unitGroup=us&key=AABXNMLM2EHQBQRG2FPXQZ42P&contentType=json
+"  
         try:
             url = f"https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{lat},{lon}/today?unitGroup=metric&key={api_key}&include=days"
             res = requests.get(url)
@@ -285,7 +286,7 @@ with tab2:
         return None
     vc_data = fetch_visualcrossing_weather(lat, lon)
 
-    # --- Display Current Weather Metrics (Open-Meteo) ---
+    # --- Display Current Weather Metrics (Open-Meteo) used here sanatan0511 readme file get full details ---
     if open_meteo_current is not None:
         cols = st.columns(3)
         cols[0].metric("🌡️ Max Temp", f"{open_meteo_current['max_temp']}°C")
@@ -447,7 +448,7 @@ with tab5:
 with tab6:
     st.subheader("📈 Advanced Water Quality Forecasting")
     
-    # Your original forecast tab content starts here
+    #  original forecast tab content starts here
     st.title("🌊 Ganga River - City Maps + Real-time Environmental Data + ML Forecast")
 
     city_bbox = {
@@ -559,7 +560,7 @@ with tab6:
 
     🚀 Data pipelines being integrated: These sources will power real-time ML + DSS in next version.
     """)
-    # Your original forecast tab content ends here
+    
 
 # ========== TAB 7: Project Info ==========
 with tab7:
