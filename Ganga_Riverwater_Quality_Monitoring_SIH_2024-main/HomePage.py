@@ -251,25 +251,31 @@ with tab1:
 with tab2:
     st.subheader(f"🌦️ Weather Conditions at {selected_location}")
 
-    # --- Open-Meteo (existing) ---
+    # --- Open-Meteo Data ---
     weather_df = fetch_open_meteo(lat, lon, days_history)
     open_meteo_current = weather_df.iloc[-1] if weather_df is not None else None
 
-    # --- Simulated IMD Data (you can replace with scraped or API later) ---
+    # --- Simulated IMD Mausam Data ---
     @st.cache_data(ttl=86400)
     def fetch_imd_mausam_data():
         return {
             "Gangotri": {"max_temp": 18.0, "min_temp": 9.0, "precipitation": 2.0},
+            "Devprayag": {"max_temp": 27.0, "min_temp": 18.0, "precipitation": 4.0},
+            "Rishikesh": {"max_temp": 30.0, "min_temp": 21.0, "precipitation": 3.0},
             "Haridwar": {"max_temp": 32.0, "min_temp": 24.0, "precipitation": 3.0},
             "Kanpur": {"max_temp": 35.0, "min_temp": 27.0, "precipitation": 5.0},
+            "Prayagraj": {"max_temp": 36.0, "min_temp": 28.0, "precipitation": 6.0},
             "Varanasi": {"max_temp": 34.0, "min_temp": 26.0, "precipitation": 4.0},
+            "Patna": {"max_temp": 33.0, "min_temp": 26.0, "precipitation": 5.0},
+            "Bhagalpur": {"max_temp": 32.0, "min_temp": 25.0, "precipitation": 6.0},
             "Kolkata": {"max_temp": 33.0, "min_temp": 28.0, "precipitation": 8.0}
         }
+
     imd_data = fetch_imd_mausam_data().get(selected_location)
 
     # --- Visual Crossing API Integration ---
     def fetch_visualcrossing_weather(lat, lon):
-        api_key = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/india?unitGroup=us&key=AABXNMLM2EHQBQRG2FPXQZ42P&contentType=json"  
+        api_key = "AABXNMLM2EHQBQRG2FPXQZ42P"  # ✅ ONLY the API key
         try:
             url = f"https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{lat},{lon}/today?unitGroup=metric&key={api_key}&include=days"
             res = requests.get(url)
@@ -283,9 +289,10 @@ with tab2:
         except Exception as e:
             st.warning(f"❌ Visual Crossing error: {e}")
         return None
+
     vc_data = fetch_visualcrossing_weather(lat, lon)
 
-    # --- Display Current Weather Metrics (Open-Meteo) used here sanatan0511 readme file get full details ---
+    # --- Display Open-Meteo Current Weather ---
     if open_meteo_current is not None:
         cols = st.columns(3)
         cols[0].metric("🌡️ Max Temp", f"{open_meteo_current['max_temp']}°C")
@@ -318,17 +325,20 @@ with tab2:
     show_source_row("🇮🇳 IMD Mausam (Simulated)", imd_data)
     show_source_row("🌐 Visual Crossing", vc_data)
 
-    st.info("✅ Use multiple sources to ensure accuracy, especially for remote areas like Gangotri.")
+    st.info("✅ Multiple weather sources improve reliability, especially in sensitive regions like Uttarakhand & UP.")
 
-    # --- Weather Trends Plots ---
+    # --- Weather Trends Charts ---
     if weather_df is not None:
         st.markdown("### 📈 Historical Weather Trends")
-        fig1 = px.line(weather_df, x='date', y=['max_temp', 'min_temp'], 
-                      labels={"value": "Temperature (°C)", "date": "Date"}, title="Temperature Trend")
+
+        fig1 = px.line(weather_df, x='date', y=['max_temp', 'min_temp'],
+                       labels={"value": "Temperature (°C)", "date": "Date"},
+                       title="Temperature Trend")
         st.plotly_chart(fig1, use_container_width=True)
 
         fig2 = px.bar(weather_df, x='date', y='precipitation',
-                     labels={"precipitation": "Rainfall (mm)", "date": "Date"}, title="Rainfall Pattern")
+                      labels={"precipitation": "Rainfall (mm)", "date": "Date"},
+                      title="Rainfall Pattern")
         st.plotly_chart(fig2, use_container_width=True)
 
 
