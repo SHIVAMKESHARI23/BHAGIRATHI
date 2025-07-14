@@ -568,7 +568,7 @@ with tab7:
     st.markdown("""
     ## Smart India Hackathon 2024 Project
     **Project Name:** Ganga River Water Quality Forecasting System  
-    **Team Name:** AquaVision  
+    **Team Name:**Bhagirathi-NamamiGanga  
     **Problem Statement:** NR116 - Real-time water quality monitoring and prediction for Ganga River  
     **Organization:** National Mission for Clean Ganga (NMCG)  
     
@@ -595,12 +595,12 @@ with tab7:
     st.markdown("""
     ### Team Members
     1. Sanatan Singh (Leader && GIS  && Backend Developer &&API )
-    2. Shivam kesari - Framework
+    2. Shivam kesari - Framework & DSA
     3. Nippon Tadrishi- Datascience && visualization && DSA
     4. Shyam Gupta  - Datascience && visualization && DSA
     5. prayas - Environmental &&ppt && DSA && CONTENT && LOGISTICS && building framework 
     
     ### Contact Information
-    Email: team.aquavision@gmail.com  
-    GitHub: [github.com/aquavision-ganga](https://github.com/aquavision-ganga)  
+    Email: sanatansingh23@lpu.in 
+    Namami Ganga: [https://nmcg.nic.in/NamamiGanga.aspx)  
     """)
