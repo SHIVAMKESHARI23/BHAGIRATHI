@@ -343,19 +343,16 @@ with tab2:
 
 
 # ========== TAB 3: Satellite Data ==========
-# ========== TAB 3: Satellite Observations ==========
-
 with tab3:
     st.subheader(f"🛰️ Satellite Observations near {selected_location}")
 
-    # Satellite parameters from Bhuvan WMS
     bhuvan_layers = {
         "Turbidity (NTU)": "Ganga_Turbidity",
         "Water Temperature (°C)": "Ganga_Water_Temp",
         "Chlorophyll (μg/L)": "Ganga_Chlorophyll",
         "Suspended Solids (mg/L)": "Ganga_Suspended_Sediment"
     }
-    
+
     selected_sat_param = st.selectbox("Select Parameter", list(bhuvan_layers.keys()))
     selected_layer = bhuvan_layers[selected_sat_param]
 
@@ -365,16 +362,15 @@ with tab3:
     **📍 Location**: `{selected_location}`  
     """)
 
-    # Optional: keep fallback trend chart
+    # Optional chart (simulated)
     df_sat = load_sample_satellite_data(selected_layer.lower(), days_history)
-    fig = px.line(df_sat, x='date', y='value', title=f"{selected_sat_param} - Trend (Simulated Fallback)")
+    fig = px.line(df_sat, x='date', y='value', title=f"{selected_sat_param} - Simulated Trend")
     st.plotly_chart(fig, use_container_width=True)
 
-    # Render map with real WMS layer from Bhuvan
     st.subheader("🌍 Real Satellite Imagery (Bhuvan WMS)")
     m = folium.Map(location=[lat, lon], zoom_start=10, tiles="OpenStreetMap")
 
-    # Real WMS tile
+    # ✅ Add real Bhuvan WMS Layer
     folium.raster_layers.WmsTileLayer(
         url="https://bhuvan-app1.nrsc.gov.in/bhuvan/wms",
         name=selected_layer,
@@ -382,19 +378,13 @@ with tab3:
         fmt="image/png",
         transparent=True,
         attribution="Bhuvan NRSC",
-        version="1.1.1"
+        version="1.1.1",
+        styles="",          # <== this was likely missing before!
+        overlay=True,
+        control=True
     ).add_to(m)
 
-    # Add marker and river path
-    folium.CircleMarker(
-        location=[lat, lon],
-        radius=8,
-        color="red",
-        fill=True,
-        popup=f"{selected_location} Monitoring Station"
-    ).add_to(m)
-
-    # Add river path
+    # Add river path and marker
     path = river_network.get_downstream_path(selected_location)
     if path:
         folium.PolyLine(
@@ -403,6 +393,14 @@ with tab3:
             weight=4,
             popup="Ganga River Path"
         ).add_to(m)
+
+    folium.CircleMarker(
+        location=[lat, lon],
+        radius=8,
+        color="red",
+        fill=True,
+        popup=f"{selected_location} Monitoring Station"
+    ).add_to(m)
 
     folium.LayerControl().add_to(m)
     folium_static(m, width=1000, height=600)
