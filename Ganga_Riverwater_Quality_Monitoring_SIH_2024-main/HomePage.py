@@ -198,7 +198,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["💧 Water Quality", "🌦�
 # =TAB 1: Water Quality ==
 with tab1:
     st.subheader(f"💧 Water Quality at {selected_location}")
-    
+
     wq_parameters = {
         "Dissolved Oxygen (DO)": "DO",
         "Biochemical Oxygen Demand (BOD)": "BOD",
@@ -206,39 +206,39 @@ with tab1:
         "Nitrate": "NO3"
     }
     selected_param = st.selectbox("Select Water Quality Parameter", list(wq_parameters.keys()))
-    
+
     # Historical and forecast data
     hist_data = load_sample_water_quality(wq_parameters[selected_param], days_history)
     forecast_data = load_sample_water_quality(wq_parameters[selected_param], forecast_days)
-    
+
     # Combine data section part-1+2
     combined_dates = list(hist_data['date']) + [
-        (datetime.strptime(hist_data['date'].iloc[-1], "%Y-%m-%d") + 
-        timedelta(days=i+1)).strftime("%Y-%m-%d") 
+        (datetime.strptime(hist_data['date'].iloc[-1], "%Y-%m-%d") +
+         timedelta(days=i+1)).strftime("%Y-%m-%d")
         for i in range(forecast_days)
     ]
     combined_values = list(hist_data['value']) + list(forecast_data['value'])
-    combined_type = ["historical"]*days_history + ["forecast"]*forecast_days
-    
-    # Ploting i and ii - more on sanatan0511/Bhagirati// unser this github readme section
+    combined_type = ["historical"] * days_history + ["forecast"] * forecast_days
+
+    # Plotting
     fig = px.line(
-        x=combined_dates, 
+        x=combined_dates,
         y=combined_values,
         color=combined_type,
         labels={"x": "Date", "y": f"{selected_param} ({hist_data['unit'].iloc[0]})"},
         title=f"{selected_param} at {selected_location}"
     )
     fig.update_layout(showlegend=True)
-    
-    # threshold line
+
+    # Threshold lines
     if selected_param == "DO":
-        fig.add_hline(y=4, line_dash="dash", line_color="red", annotation_text="Critical Level")
+        fig.add_hline(y=4, line_dash="dash", line_color="red", annotation_text="Critical DO Level")
     elif selected_param == "BOD":
-        fig.add_hline(y=6, line_dash="dash", line_color="orange", annotation_text="Safety Threshold")
-    
+        fig.add_hline(y=6, line_dash="dash", line_color="orange", annotation_text="BOD Safety Threshold")
+
     st.plotly_chart(fig, use_container_width=True)
-    
-    # Alerts
+
+    # === Alert System ===
     alerts = get_alerts(hist_data)
     if alerts:
         st.error("### ⚠️ Water Quality Alerts")
@@ -246,6 +246,39 @@ with tab1:
             st.error(alert)
     else:
         st.success("✅ Water quality within safe limits")
+
+    # === DSA: Top Critical Locations using MinHeap ===
+    import heapq
+    st.subheader("🚨 Top Critical Stations (DSA - MinHeap based on DO)")
+
+    station_alerts = []
+    for loc in locations:
+        try:
+            wq = load_sample_water_quality("DO", 1)
+            score = float(wq['value'].iloc[-1])
+            if score < 4:  # below DO threshold
+                heapq.heappush(station_alerts, (score, loc))
+        except:
+            continue
+
+    if station_alerts:
+        st.warning("Stations with Dissolved Oxygen below 4 mg/L:")
+        for i in range(min(3, len(station_alerts))):
+            score, loc = heapq.heappop(station_alerts)
+            st.write(f"🔻 {loc} → DO = {score:.2f} mg/L")
+    else:
+        st.success("✅ All stations have safe DO levels currently.")
+
+    # === DSA: Graph Path Traversal ===
+    st.subheader("🧭 River Path Traversal (DSA - DFS)")
+
+    path = river_network.get_downstream_path(selected_location)
+    if path:
+        st.markdown("➡️ **Downstream path from current station:**")
+        st.markdown(" → ".join(path))
+    else:
+        st.info("ℹ️ No downstream path found for this station.")
+
 
 # ========== TAB 2: Weather Data ==========
 with tab2:
