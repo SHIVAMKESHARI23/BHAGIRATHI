@@ -1,0 +1,11 @@
+streamlit
+pandas
+numpy
+matplotlib
+seaborn
+plotly
+tensorflow
+scikit-learn
+folium
+streamlit-folium
+google-generativeai
