@@ -269,8 +269,7 @@ with tab2:
 
     # --- Visual Crossing API Integration ---
     def fetch_visualcrossing_weather(lat, lon):
-        api_key = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/india?unitGroup=us&key=AABXNMLM2EHQBQRG2FPXQZ42P&contentType=json
-"  
+        api_key = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/india?unitGroup=us&key=AABXNMLM2EHQBQRG2FPXQZ42P&contentType=json"  
         try:
             url = f"https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{lat},{lon}/today?unitGroup=metric&key={api_key}&include=days"
             res = requests.get(url)
