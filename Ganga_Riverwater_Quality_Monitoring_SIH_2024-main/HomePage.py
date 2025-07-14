@@ -343,52 +343,70 @@ with tab2:
 
 
 # ========== TAB 3: Satellite Data ==========
+# ========== TAB 3: Satellite Observations ==========
+
 with tab3:
     st.subheader(f"🛰️ Satellite Observations near {selected_location}")
-    
-    sat_parameters = {
-        "Turbidity (NTU)": "turbidity",
-        "Water Temperature (°C)": "water_temp",
-        "Chlorophyll (μg/L)": "chlorophyll",
-        "Suspended Solids (mg/L)": "tss"
+
+    # Satellite parameters from Bhuvan WMS
+    bhuvan_layers = {
+        "Turbidity (NTU)": "Ganga_Turbidity",
+        "Water Temperature (°C)": "Ganga_Water_Temp",
+        "Chlorophyll (μg/L)": "Ganga_Chlorophyll",
+        "Suspended Solids (mg/L)": "Ganga_Suspended_Sediment"
     }
-    selected_sat_param = st.selectbox("Select Parameter", list(sat_parameters.keys()))
     
-    sat_df = load_sample_satellite_data(sat_parameters[selected_sat_param], days_history)
-    fig = px.line(sat_df, x='date', y='value', title=f"{selected_sat_param} Trends")
+    selected_sat_param = st.selectbox("Select Parameter", list(bhuvan_layers.keys()))
+    selected_layer = bhuvan_layers[selected_sat_param]
+
+    st.markdown(f"""
+    **📡 Source**: [Bhuvan Ganga Portal](https://bhuvan-app1.nrsc.gov.in/mowr_ganga/)  
+    **🌐 Layer**: `{selected_layer}`  
+    **📍 Location**: `{selected_location}`  
+    """)
+
+    # Optional: keep fallback trend chart
+    df_sat = load_sample_satellite_data(selected_layer.lower(), days_history)
+    fig = px.line(df_sat, x='date', y='value', title=f"{selected_sat_param} - Trend (Simulated Fallback)")
     st.plotly_chart(fig, use_container_width=True)
-    
-    # Enhanced Satellite Map
-    st.subheader("🌍 Ganga River Satellite Imagery")
-    m = folium.Map(location=[lat, lon], zoom_start=13, tiles=None)
-    
-    # Add high-res satellite layer
-    folium.TileLayer(
-        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        attr="Esri, Maxar, Earthstar Geographics",
-        name="Satellite View"
+
+    # Render map with real WMS layer from Bhuvan
+    st.subheader("🌍 Real Satellite Imagery (Bhuvan WMS)")
+    m = folium.Map(location=[lat, lon], zoom_start=10, tiles="OpenStreetMap")
+
+    # Real WMS tile
+    folium.raster_layers.WmsTileLayer(
+        url="https://bhuvan-app1.nrsc.gov.in/bhuvan/wms",
+        name=selected_layer,
+        layers=f"Bhuvan:{selected_layer}",
+        fmt="image/png",
+        transparent=True,
+        attribution="Bhuvan NRSC",
+        version="1.1.1"
     ).add_to(m)
-    
-    # Add Ganga river path
+
+    # Add marker and river path
+    folium.CircleMarker(
+        location=[lat, lon],
+        radius=8,
+        color="red",
+        fill=True,
+        popup=f"{selected_location} Monitoring Station"
+    ).add_to(m)
+
+    # Add river path
     path = river_network.get_downstream_path(selected_location)
     if path:
         folium.PolyLine(
             [(locations[loc]['lat'], locations[loc]['lon']) for loc in path],
             color="blue",
             weight=4,
-            popup="Ganga River"
+            popup="Ganga River Path"
         ).add_to(m)
-    
-    # Add current location marker
-    folium.CircleMarker(
-        location=[lat, lon],
-        radius=10,
-        color="red",
-        fill=True,
-        popup=f"<b>{selected_location}</b><br>Monitoring Station"
-    ).add_to(m)
-    
+
+    folium.LayerControl().add_to(m)
     folium_static(m, width=1000, height=600)
+
 
 # ========== TAB 4: Industrial Sewage ==========
 with tab4:
