@@ -693,13 +693,12 @@ with tab7:
     
     st.markdown("""
     ### Team Members
-    1. Sanatan Singh (Leader && GIS  && Backend Developer &&API )
-    2. Shivam kesari - Framework & DSA
-    3. Nippon Tadrishi- Datascience && visualization && DSA
-    4. Shyam Gupta  - Datascience && visualization && DSA
-    5. prayas - Environmental &&ppt && DSA && CONTENT && LOGISTICS && building framework 
+     Sanatan Singh (Leader && GIS  && Backend Developer &&API && ALL WORK DONE SOLELY AND INFAVOUR OF SANATAN SINGH )
+     
+     © SIYA RAM SOCIETY OF RESEARCH AND DEVELOPMENT
     
     ### Contact Information
     Email: sanatansingh23@lpu.in 
     Namami Ganga: [https://nmcg.nic.in/NamamiGanga.aspx)  
     """)
+
